@@ -86,22 +86,23 @@ class FTSIndex:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
         
-        sql = """
+        # FTS5 doesn't support parameterized queries in MATCH clause
+        # Escape special characters and wrap in quotes
+        escaped_query = query.replace('"', '""')
+        
+        sql = f"""
             SELECT id, timestamp, event_type, role, content, session_id,
                    bm25(events_fts) as score
             FROM events_fts
-            WHERE events_fts MATCH ?
+            WHERE events_fts MATCH '"{escaped_query}"'
         """
-        params = [query]
         
         if session_id:
-            sql += " AND session_id = ?"
-            params.append(session_id)
+            sql += f" AND session_id = '{session_id}'"
         
-        sql += " ORDER BY score LIMIT ?"
-        params.append(limit)
+        sql += f" ORDER BY score LIMIT {limit}"
         
-        cursor.execute(sql, params)
+        cursor.execute(sql)
         results = [dict(row) for row in cursor.fetchall()]
         conn.close()
         return results

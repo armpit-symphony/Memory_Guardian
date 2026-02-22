@@ -23,14 +23,15 @@ def main():
     
     # Remember command
     remember_parser = subparsers.add_parser("remember", help="Store something in memory")
-    remember_parser.add_argument("content", help="Content to remember")
+    remember_parser.add_argument("--content", required=True, help="Content to remember")
     remember_parser.add_argument("--role", default="user", help="Role (user/assistant/system)")
     remember_parser.add_argument("--session", help="Session ID")
     
     # Recall command
     recall_parser = subparsers.add_parser("recall", help="Search memory")
-    recall_parser.add_argument("query", help="Search query")
-    recall_parser.add_argument("--limit", type=int, default=10, help="Max results")
+    recall_parser.add_argument("--query", required=True, help="Search query")
+    recall_parser.add_argument("--session", help="Session ID")
+    recall_parser.add_argument("--k", type=int, default=10, help="Max results")
     
     # Recent command
     recent_parser = subparsers.add_parser("recent", help="Get recent memories")
@@ -39,11 +40,14 @@ def main():
     
     # Context command
     context_parser = subparsers.add_parser("context", help="Get packed context block")
-    context_parser.add_argument("query", help="Search query")
-    context_parser.add_argument("--limit", type=int, default=10, help="Max events")
+    context_parser.add_argument("--query", required=True, help="Search query")
+    context_parser.add_argument("--session", help="Session ID")
+    context_parser.add_argument("--k", type=int, default=10, help="Max events")
+    context_parser.add_argument("--budget", type=int, default=4000, help="Token budget")
     
     # Consolidate command
-    subparsers.add_parser("consolidate", help="Run consolidation job")
+    consolidate_parser = subparsers.add_parser("consolidate", help="Run consolidation job")
+    consolidate_parser.add_argument("--session", help="Session ID")
     
     # Status command
     subparsers.add_parser("status", help="Show memory status")
@@ -64,7 +68,7 @@ def main():
         print(json.dumps({"id": event.id, "status": "stored"}))
     
     elif args.command == "recall":
-        events = mg.recall(args.query, limit=args.limit)
+        events = mg.recall(args.query, limit=args.k)
         for e in events:
             print(f"[{e.timestamp.strftime('%H:%M')}] {e.role or e.type.value}: {e.content}")
     
@@ -74,11 +78,14 @@ def main():
             print(f"[{e.timestamp.strftime('%H:%M')}] {e.role or e.type.value}: {e.content}")
     
     elif args.command == "context":
-        context = mg.get_context(args.query, limit=args.limit)
+        # Update packer with budget
+        from memory_os.retrieve import ContextPacker
+        mg.packer = ContextPacker(max_tokens=args.budget)
+        context = mg.get_context(args.query, limit=args.k, session_id=args.session)
         print(context)
     
     elif args.command == "consolidate":
-        result = mg.consolidate()
+        result = mg.consolidate(session_id=args.session)
         print(json.dumps(result, indent=2))
     
     elif args.command == "status":

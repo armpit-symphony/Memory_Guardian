@@ -17,12 +17,12 @@ class Retriever:
         self.fts = FTSIndex(data_dir)
         self.embed = EmbedIndex(data_dir)
 
-    def retrieve(self, query: str, limit: int = 10, hybrid: bool = True) -> list[Event]:
+    def retrieve(self, query: str, limit: int = 10, hybrid: bool = True, session_id: str | None = None) -> list[Event]:
         """Hybrid retrieval: FTS + embeddings."""
         results = []
         
         # FTS results
-        fts_results = self.fts.search(query, limit=limit)
+        fts_results = self.fts.search(query, limit=limit, session_id=session_id)
         fts_ids = {r["id"] for r in fts_results}
         
         # Load full events for FTS results
@@ -91,7 +91,7 @@ class ContextPacker:
         context += "\n<!-- MEMORY_CONTEXT_END -->\n"
         return context
 
-    def pack_query(self, query: str, retriever: Retriever, limit: int = 10) -> str:
+    def pack_query(self, query: str, retriever: Retriever, limit: int = 10, session_id: str | None = None) -> str:
         """Retrieve and pack in one call."""
-        events = retriever.retrieve(query, limit=limit)
+        events = retriever.retrieve(query, limit=limit, session_id=session_id)
         return self.pack(events)

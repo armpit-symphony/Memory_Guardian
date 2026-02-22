@@ -57,74 +57,49 @@ pip install -e .
 
 # Quick Start
 
-## 1) Initialize Memory
-
 ```bash
-python -m memory_os.cli init
+python -m memory_os.cli status --data-dir ./data
+python -m memory_os.cli remember --data-dir ./data --session test_session --role HUMAN --content "Phil wants boring progressive growth."
+python -m memory_os.cli recall --data-dir ./data --session test_session --query "growth" --k 8
+python -m memory_os.cli context --data-dir ./data --session test_session --query "What is Phil focused on?" --k 8 --budget 900
+python -m memory_os.cli consolidate --data-dir ./data --session test_session
 ```
 
-Creates:
+## Commands Explained
 
-- `ledger.jsonl`
-- FTS index
-- data folders
-
-## 2) Record an Event
-
-```bash
-python -m memory_os.cli record \
-  --session test_session \
-  --role HUMAN \
-  --content "Phil wants boring progressive growth."
-```
-
-This appends to the ledger and indexes the content.
-
-## 3) Search Memory
-
-```bash
-python -m memory_os.cli search \
-  --session test_session \
-  --query "growth strategy"
-```
-
-Returns ranked results from FTS (and embeddings if enabled).
-
-## 4) Build a Context Block
-
-```bash
-python -m memory_os.cli context \
-  --session test_session \
-  --query "What is Phil focused on?" \
-  --k 8 \
-  --budget 900
-```
-
-Outputs a token-bounded context block safe for injection into an LLM prompt.
+| Command | Purpose |
+|---------|---------|
+| `status` | Show memory stats (total events, data dir, max tokens) |
+| `remember` | Store an event in the ledger |
+| `recall` | Search memory using FTS |
+| `context` | Build a token-bounded context block for LLM injection |
+| `consolidate` | Extract facts and create daily summaries |
 
 ---
 
 # Programmatic Usage
 
 ```python
-from memory_os.api import MemoryOS
-from memory_os.config import MemoryConfig
+from memory_os.api import MemoryGuardian
+from memory_os.config import Config
 
-cfg = MemoryConfig()
-memory = MemoryOS(cfg)
+config = Config(data_dir="./data")
+memory = MemoryGuardian(config)
 
-memory.record_event(
-    session_id="room_1",
+# Remember something
+memory.remember_message(
     role="HUMAN",
-    content="We want stable infrastructure growth."
+    content="We want stable infrastructure growth.",
+    session_id="room_1"
 )
 
-context_block = memory.build_context_block(
-    session_id="room_1",
-    user_query="What are we optimizing for?"
+# Get context for LLM
+context = memory.get_context(
+    query="What are we optimizing for?",
+    limit=8
 )
 
-print(context_block)
+print(context)
 ```
 
 ---
@@ -133,10 +108,8 @@ print(context_block)
 
 Consolidation extracts durable facts and creates daily summaries.
 
-Run manually:
-
 ```bash
-python -m memory_os.cli consolidate --session test_session
+python -m memory_os.cli consolidate --data-dir ./data --session test_session
 ```
 
 **Recommended:**

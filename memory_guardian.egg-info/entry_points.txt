@@ -1,0 +1,2 @@
+[console_scripts]
+memory-guardian = memory_os.cli:main

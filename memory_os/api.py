@@ -65,9 +65,9 @@ class MemoryGuardian:
         """Get the N most recent memories."""
         return self.retriever.get_recent(n=n, session_id=session_id)
 
-    def get_context(self, query: str, limit: int = 10) -> str:
+    def get_context(self, query: str, limit: int = 10, session_id: str | None = None) -> str:
         """Get packed context block for injection into prompt."""
-        return self.packer.pack_query(query, self.retriever, limit=limit)
+        return self.packer.pack_query(query, self.retriever, limit=limit, session_id=session_id)
 
     def consolidate(self, session_id: str | None = None) -> dict:
         """Run consolidation job - extract facts and create summaries."""
